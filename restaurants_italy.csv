@@ -1,0 +1,95 @@
+Restaurants,Name,Address,Type,Popularity,Profit
+,Ristorante La Trattoria,"Via XXV Aprile, 31, 42013 Casalgrande RE, Italia",Restaurant,2739.0,
+,Toscano,"UG Floor, Phoenix Mall of the Millennium, Shankar Kalat Nagar, Wakad, Pimpri-Chinchwad, Pune, Maharashtra 411057, India",Restaurant,642.0,
+,Trattoria Restaurant,"President, Mumbai - IHCL SeleQtions 90, Cuffe Parade, Mumbai, Maharashtra 400005, India",Restaurant,1393.0,
+,Ristorante Pizza Forum Roma- Forno a Legna,"Via di S. Giovanni in Laterano, 34-38, 00184 Roma RM, Italia",Restaurant,20832.0,
+,Trieste Pizza Roma,"Via Urbana, 112, 00184 Roma RM, Italia",Restaurant,5052.0,
+,Romana Pizza,"V. del Governo Vecchio, 10, 00186 Roma RM, Italia",Restaurant,1394.0,
+,Pizza Florida,"00186, Via Florida, 25, 00186 Roma RM, Italia",Restaurant,3751.0,
+,Pizza in Trevi - Fontana di Trevi,"Via di S. Vincenzo, 30/30A, 00187 Roma RM, Italia",Restaurant,8521.0,
+,Pizzeria Italia dal 1987,"Corso d'Italia, 103, 00198 Roma RM, Italia",Restaurant,1284.0,
+,La Prezzemolina,"Via del Colosseo, 1 E/F, 00184 Roma RM, Italia",Restaurant,3090.0,
+,DEROMA - Farine Romane,"Via Poli, 27, 00187 Roma RM, Italia",Restaurant,3545.0,
+,Emma,"Via del Monte della Farina, 28, 00186 Roma RM, Italia",Restaurant,5955.0,
+,Pizza e Mozzarella,"Via del Piè di Marmo, 32, 00186 Roma RM, Italia",Restaurant,3957.0,
+,CasaManco,"Via Aldo Manuzio, 66C, 00153 Roma RM, Italia",Restaurant,1297.0,
+,180Grammi Pizzeria Romana,"Via Genazzano, 32, 00177 Roma RM, Italia",Restaurant,1868.0,
+,Pizzeria Remo A Testaccio,"Piazza di S Maria Liberatrice, 44, 00153 Roma RM, Italia",Restaurant,4409.0,
+,Mariuccia,"P.za della Cancelleria, 92, 00186 Roma RM, Italia",Restaurant,7261.0,
+,Pizza Zizza Roma,"Via delle Fornaci, 11, 00165 Roma RM, Italia",Restaurant,3657.0,
+,Pizzeria Roma,"Via delle Alzavole, 00169 Roma RM, Italia",Restaurant,88.0,
+,Pinsitaly Trevi,"Via della Panetteria, 12, 00187 Roma RM, Italia",Restaurant,5046.0,
+,Ristorante Pizzeria Castello,"Via delle Fornaci, 13, 00165 Roma RM, Italia",Restaurant,15314.0,
+,Ristorante Pizzeria Imperiale,"Largo Corrado Ricci, 37, 00184 Roma RM, Italia",Restaurant,10214.0,
+,Core de Roma,"Via Vetulonia, 27, 00183 Roma RM, Italia",Restaurant,1286.0,
+,Spizzicamo,"Via Marianna Dionigi, 34, 00193 Roma RM, Italia",Restaurant,231.0,
+,Pizza e Panini di Roma,"Via del Piè di Marmo, 35, 00186 Roma RM, Italia",Restaurant,820.0,
+,Ristorante Pizzeria “Andrea”,"Via Castelfidardo, 30, 00185 Roma RM, Italia",Restaurant,1700.0,
+,Pizza Lu' Roma,"Via Simone de Saint Bon, 57, 00195 Roma RM, Italia",Restaurant,265.0,
+,Sibilla Ristorante Pizzeria Roma,"Via Caio Canuleio, 48, 00174 Roma RM, Italia",Restaurant,83.0,
+,Sfizio Ristorante Caffè Pizzeria,"Via Giovanni Giolitti, 77, 00185 Roma RM, Italia",Restaurant,8357.0,
+,Antica pizzeria da Michele Roma Monte Grappa,"Piazza Monte Grappa, 1/A, 00195 Roma RM, Italia",Restaurant,5194.0,
+,Alice Pizza Trastevere,"Via di S. Francesco a Ripa, 1, 00153 Roma RM, Italia",Restaurant,2716.0,
+,Pizzeria Acqua & Farina,"Via Principe Amedeo, 90, 00185 Roma RM, Italia",Restaurant,1390.0,
+,Ristorante Andrea,"00185, Via dei Mille, 39, 00185 Roma RM, Italia",Restaurant,3655.0,
+,Volta Romana Pizzeria,"Via Ardeatina, 164, 00147 Roma RM, Italia",Restaurant,43.0,
+,Fradiavolo Pizzeria - Roma Trastevere,"Via di Porta Settimiana, 8, 00165 Roma RM, Italia",Restaurant,495.0,
+,L'antica Roma,"Via Alberto Mario, 17, 00152 Roma RM, Italia",Restaurant,834.0,
+,La Pecora Pazza,"Via Statilia, 35, 00185 Roma RM, Italia",Restaurant,1640.0,
+,Malaterra | Roma Prati,"Via Cicerone, 58, 00193 Roma RM, Italia",Restaurant,4125.0,
+,Al Forno della Soffitta,"Via Piave, 62, 00187 Roma RM, Italia",Restaurant,5589.0,
+,50 Kalò di Ciro Salvo - Roma,"Via Flavia, 3b, 00187 Roma RM, Italia",Restaurant,3934.0,
+,Restaurant Pizzeria Roma,"Carrer de Sant Esteve, 52, 08380 Malgrat de Mar, Barcelona, Spagna",Restaurant,858.0,
+,Pizzeria da Pasquale Roma,"Via dei Prefetti, 34/A, 00186 Roma RM, Italia",Restaurant,1188.0,
+,"Restorante- Pizzeria ""Roma antica""","Via Cavour, 285, 00184 Roma RM, Italia",Restaurant,582.0,
+,Ristorante Pizzeria Il Casale Roma,"Via Colle Di Mezzo, 39, 00143 Roma RM, Italia",Restaurant,1244.0,
+,Antica Friggitoria La Masardona Roma,"Piazza dell'Oro, 6, 00186 Roma RM, Italia",Restaurant,1422.0,
+,Pinsere,"Via Flavia, 98, 00187 Roma RM, Italia",Restaurant,3572.0,
+,Ciro Purpetta - Roma Via Goito,"Via Goito, 13-15, 00185 Roma RM, Italia",Restaurant,1784.0,
+,Pizzeria Da Baffetto,"V. del Governo Vecchio, 114, 00186 Roma RM, Italia",Restaurant,10118.0,
+,Antica pizzeria da Michele Roma EUR,"Via Stoccolma, 11, 00144 Roma RM, Italia",Restaurant,1694.0,
+,Vico Pizza&Wine Roma,"Piazza Rondanini, 47, 00186 Roma RM, Italia",Restaurant,435.0,
+,PizzaRoma.it,"Via del Trullo, 228, 00148 Roma RM, Italia",Restaurant,23.0,
+,Pizzium - Roma via Piave,"Via Piave, 9, 00187 Roma RM, Italia",Restaurant,2672.0,
+,Pizza Antica Roma Di Giuliano locatelli,"Via Santi Martiri di Selva Candida, 16, 00166 Roma RM, Italia",Restaurant,221.0,
+,Oliva Pizza - Roma Talenti,"Via Carlo Lorenzini, 65, 00137 Roma RM, Italia",Restaurant,130.0,
+,L'Isola della Pizza,"Via degli Scipioni, 45, 00192 Roma RM, Italia",Restaurant,5735.0,
+,Sorbillo Roma,"Piazza Augusto Imperatore, 46, 00186 Roma RM, Italia",Restaurant,4810.0,
+,DIOS la vera pizza Napoletana a Roma,"Via Orso Mario Corbino, 27, 00146 Roma RM, Italia",Restaurant,661.0,
+,Trattoria Sapori Di Casa,"Viale dell'Università, 17, 00185 Roma RM, Italia",Restaurant,2472.0,
+,Alle Carrette,"Via della Madonna dei Monti, 95, 00184 Roma RM, Italia",Restaurant,3917.0,
+,Antica Pizzeria Cipro,"Via Carlo Passaglia, 1C, 00136 Roma RM, Italia",Restaurant,821.0,
+,Roma Ristorante & Pizzeria Da Mauro Patong,"124, Banana Walk Mall, 1 floor, 11 Thawewong Rd, Pa Tong, Phuket 83150, Thailandia",Restaurant,1508.0,
+,Gustoso Gluten Free Passion Roma,"Via Gasperina, 151, 00173 Roma RM, Italia",Restaurant,1914.0,
+,Osteria Del Mare,"Via Achille Franceschi, 4/C, 55042 Forte dei Marmi LU, Italia",Restaurant,1771.0,
+,Antica Osteria del Mare,"Via Ascanio Sforza, 105, 20141 Milano MI, Italia",Restaurant,948.0,
+,Ostaria del Mare,"Via Casette, 5, 48015 Cervia RA, Italia",Restaurant,3042.0,
+,Osteria del mare,"Viale Regina Margherita, 7, 91100 Trapani TP, Italia",Restaurant,227.0,
+,Vecchia Osteria del Mare,"Via Giovanni Bovio, 8, 20159 Milano MI, Italia",Restaurant,586.0,
+,L'Osteria Da'Mare,"Via Genova, 22, 00055 Ladispoli RM, Italia",Restaurant,2.0,
+,Osteria del Mare già Vòtapentole,"Via IV Novembre, 15, 58043 Castiglione della Pescaia GR, Italia",Restaurant,1029.0,
+,Stella del Mare Restaurant,"Corso Principe di Piemonte, 19, 73013 Galatina LE, Italia",Restaurant,202.0,
+,Osteria del Mare - Happy House,"Via S. Martino, 5, 42121 Reggio Emilia RE, Italia",Restaurant,397.0,
+,Trattoria del Mare,"Via M. Buonarroti, 23, 17031 Albenga SV, Italia",Restaurant,1523.0,
+,ko,Not Available,Restaurant,Not Available,Not Available
+,"""Nippon Restaurants S.R.L.""",Not Available,Restaurant,Not Available,Not Available
+,Registered Office,Not Available,Restaurant,Not Available,Not Available
+,,Not Available,Restaurant,Not Available,Not Available
+,Como,Not Available,Restaurant,Not Available,Not Available
+,Shareholding or Joint-stock Company,Not Available,Restaurant,Not Available,Not Available
+,Alexander Restaurants S.R.L.,Not Available,Restaurant,Not Available,Not Available
+,Torino,Not Available,Restaurant,Not Available,Not Available
+,Bangla Restaurants Srls,Not Available,Restaurant,Not Available,Not Available
+,Roma,Not Available,Restaurant,Not Available,Not Available
+,Co.Ti. Restaurants S.R.L.,Not Available,Restaurant,Not Available,Not Available
+,Trento,Not Available,Restaurant,Not Available,Not Available
+,Consorzio Inc.Hotels & Restaurants,Not Available,Restaurant,Not Available,Not Available
+,Parma,Not Available,Restaurant,Not Available,Not Available
+,Eagles Restaurants S.R.L.,Not Available,Restaurant,Not Available,Not Available
+,Garibaldi Restaurants S.R.L.,Not Available,Restaurant,Not Available,Not Available
+,Gq Restaurants Srl,Not Available,Restaurant,Not Available,Not Available
+,Genova,Not Available,Restaurant,Not Available,Not Available
+,Hotels & Restaurants S.R.L.,Not Available,Restaurant,Not Available,Not Available
+,Rimini,Not Available,Restaurant,Not Available,Not Available
+,Italservice Restaurants S.R.L.S.,Not Available,Restaurant,Not Available,Not Available
+,Shown from 1 to 75 of 298.263 results,Not Available,Restaurant,Not Available,Not Available
