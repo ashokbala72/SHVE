@@ -415,7 +415,7 @@ if tab_selection == "Prospects":
     # =========================================================
     # 4. Render table INSIDE A FORM → prevents reruns
     # =========================================================
-    with st.form("prospects_form"):
+    with st.form("prospects_form_unique"):
         st.subheader("Select Prospects")
 
         # Header row
@@ -1470,6 +1470,7 @@ if tab_selection == "Sales Email":
                 st.success("Email copied!")
         else:
             st.warning("Failed to generate email.")
+
 
 
 
