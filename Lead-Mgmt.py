@@ -688,8 +688,7 @@ def load_salesperson_data():
         st.error("Salesperson data (synthetic_sales_data.csv) is missing!")
         return pd.DataFrame(columns=["Sales Person ID", "Name", "Experience (Years)", "Expertise in Off-Grid Energy", "Location (City in Italy)"])
 
-import openai
-import requests
+
 
 # Function to get the best salesperson from OpenAI based on the business and expertise
 # Function to get the best salesperson from OpenAI based on the business and expertise
@@ -1294,10 +1293,7 @@ if tab_selection == "Lead Information":
         else:
             st.warning("No additional information could be retrieved for this business.")
 
-import streamlit as st
-import requests
-import json
-import pyperclip  # Optional: for local copy functionality if desired
+
 
 if tab_selection == "Sales Email":
     st.title("Sales Email Generator")
@@ -1457,6 +1453,7 @@ if tab_selection == "Sales Email":
                 st.success("Email copied!")
         else:
             st.warning("Failed to generate email.")
+
 
 
 
