@@ -354,67 +354,77 @@ if tab_selection == "Prospects":
     # Load restaurant data
     restaurants_df = load_data()
 
-    # Load customer and leads data to exclude already existing businesses
-    customers_df = load_leads_data()  # Use the same function for loading customers and leads
+    # Load customer and leads data to exclude businesses already added
+    customers_df = load_leads_data()
     leads_df = load_leads_data()
-
-    # Combine customers and leads data to get a list of already existing businesses
     existing_businesses = pd.concat([customers_df, leads_df])['Name'].tolist()
 
-    # Filter out the businesses that are already in customers or leads CSVs
-    filtered_restaurants_df = restaurants_df[~restaurants_df['Name'].isin(existing_businesses)]
+    # Filter restaurants
+    filtered_restaurants_df = restaurants_df[
+        ~restaurants_df['Name'].isin(existing_businesses)
+    ]
 
-    # Check if synthetic data is already in session_state
-    if 'synthetic_data_batch' not in st.session_state:
-        # Generate synthetic data for all businesses and store it in session_state
-        business_names_batch = filtered_restaurants_df['Name'].tolist()
-        synthetic_data_batch = generate_synthetic_data_batch(business_names_batch)
-        st.session_state.synthetic_data_batch = synthetic_data_batch  # Store it in session_state
+    # =========================================================
+    # 1. Generate synthetic data ONCE and store in session state
+    # =========================================================
+    if "synthetic_data_batch" not in st.session_state:
+        business_names = filtered_restaurants_df["Name"].tolist()
+        st.session_state.synthetic_data_batch = generate_synthetic_data_batch(business_names)
 
-    # Use the synthetic data from session_state
     synthetic_data_batch = st.session_state.synthetic_data_batch
-    prospects_selection = []
 
-    if synthetic_data_batch:
-        for idx, row in filtered_restaurants_df.iterrows():
-            # Get synthetic data for the corresponding business
-            synthetic_data = next((item for item in synthetic_data_batch if item["business_name"] == row["Name"]), None)
+    # =========================================================
+    # 2. Generate ranks ONCE per business and store in session state
+    # =========================================================
+    if "prospect_ranks" not in st.session_state:
+        st.session_state.prospect_ranks = {}
 
-            if synthetic_data:
-                # Get the rank from OpenAI
-                rank = get_rank_from_openai(synthetic_data)
-                if rank is not None:
-                    prospects_selection.append({
-                        "Rank": rank,
-                        "Name": row["Name"],
-                        "Address": row["Address"],
-                        "Profit": synthetic_data.get("estimated_revenue", "Not Available"),
-                        "Popularity": row["Popularity"] if pd.notna(row["Popularity"]) else "Not Available",
-                        "Market Share": synthetic_data.get("market_share", "Not Available"),
-                        "Credit Score": synthetic_data.get("credit_score", "Not Available"),
-                        "Location Rating": synthetic_data.get("location_rating", "Not Available")
-                    })
+        with st.spinner("Generating ranks for prospects..."):
+            for item in synthetic_data_batch:
+                business_name = item["business_name"]
+                st.session_state.prospect_ranks[business_name] = get_rank_from_openai(item)
 
-        # Convert the list of prospects to a DataFrame
-        prospects_df = pd.DataFrame(prospects_selection)
+    ranks = st.session_state.prospect_ranks
 
-        # Sort the prospects by rank (lower rank means better)
-        prospects_df = prospects_df.sort_values(by=["Rank"], ascending=True)
+    # =========================================================
+    # 3. Build prospects table
+    # =========================================================
+    prospects_list = []
+    for idx, row in filtered_restaurants_df.iterrows():
+        syn = next((x for x in synthetic_data_batch if x["business_name"] == row["Name"]), None)
+        if syn:
+            prospects_list.append({
+                "Rank": ranks.get(row["Name"], 999),
+                "Name": row["Name"],
+                "Address": row["Address"],
+                "Profit": syn.get("estimated_revenue", "N/A"),
+                "Popularity": row["Popularity"] if pd.notna(row["Popularity"]) else "N/A",
+                "Market Share": syn.get("market_share", "N/A"),
+                "Credit Score": syn.get("credit_score", "N/A"),
+                "Location Rating": syn.get("location_rating", "N/A")
+            })
 
-        # Manually display the headers before the rows
+    prospects_df = pd.DataFrame(prospects_list).sort_values(by="Rank")
+
+    # Ensure checkbox state tracking
+    if "prospect_checkbox" not in st.session_state:
+        st.session_state.prospect_checkbox = {
+            name: False for name in prospects_df["Name"]
+        }
+
+    # =========================================================
+    # 4. Render table INSIDE A FORM → prevents reruns
+    # =========================================================
+    with st.form("prospects_form"):
+        st.subheader("Select Prospects")
+
+        # Header row
         cols = st.columns([1, 3, 3, 2, 2, 2, 2, 2, 1])
-        cols[0].write("Rank")
-        cols[1].write("Name")
-        cols[2].write("Address")
-        cols[3].write("Profit")
-        cols[4].write("Popularity")
-        cols[5].write("Market Share")
-        cols[6].write("Credit Score")
-        cols[7].write("Location Rating")
-        cols[8].write("Select")
+        headers = ["Rank", "Name", "Address", "Profit", "Popularity", "Market Share", "Credit Score", "Location Rating", "Select"]
+        for c, h in zip(cols, headers):
+            c.write(f"**{h}**")
 
-        # Add checkboxes and handle selected prospects
-        prospects_df['Select'] = False  # Add a new column to store checkbox state
+        # Data rows
         for idx, row in prospects_df.iterrows():
             cols = st.columns([1, 3, 3, 2, 2, 2, 2, 2, 1])
             cols[0].write(row['Rank'])
@@ -425,32 +435,32 @@ if tab_selection == "Prospects":
             cols[5].write(row['Market Share'])
             cols[6].write(row['Credit Score'])
             cols[7].write(row['Location Rating'])
-            
-            checkbox = cols[8].checkbox("", key=f"checkbox_{idx}")  # Create checkbox for each row
-            # Store the checkbox state in the DataFrame
-            prospects_df.at[idx, 'Select'] = checkbox
 
-        # Generate leads when the button is clicked
-        selected_prospects = prospects_df[prospects_df["Select"]]
+            # Checkbox that does NOT trigger rerun
+            state_key = row['Name']
+            st.session_state.prospect_checkbox[state_key] = cols[8].checkbox(
+                "", value=st.session_state.prospect_checkbox[state_key],
+                key=f"prospect_{state_key}"
+            )
 
-        if st.button("Generate Selected Leads"):
-            if len(selected_prospects) > 0:
-                # Load the original restaurant data from restaurants_italy.csv
-                restaurants_df = load_data()  # This reads from the restaurants_italy.csv
+        submit_button = st.form_submit_button("Generate Selected Leads")
 
-                # Merge the selected prospects with the original restaurants dataframe to match the row data
-                selected_prospects_data = restaurants_df[restaurants_df['Name'].isin(selected_prospects['Name'])]
+    # =========================================================
+    # 5. Handle form submission
+    # =========================================================
+    if submit_button:
+        selected_names = [name for name, selected in st.session_state.prospect_checkbox.items() if selected]
 
-                # Append the selected prospects to leads.csv
-                leads_df = load_leads_data()  # This loads the current leads data (if any)
-                new_leads = pd.concat([leads_df, selected_prospects_data], ignore_index=True)
+        if selected_names:
+            selected_rows = restaurants_df[restaurants_df["Name"].isin(selected_names)]
+            current_leads = load_leads_data()
+            updated_df = pd.concat([current_leads, selected_rows], ignore_index=True)
+            updated_df.to_csv(leads_csv_path, index=False)
 
-                # Save the updated leads data back to leads.csv
-                new_leads.to_csv(leads_csv_path, index=False)
+            st.success(f"Added {len(selected_names)} prospects as leads.")
+        else:
+            st.warning("Please select at least one prospect.")
 
-                st.success(f"Successfully added {len(selected_prospects)} selected prospects as Leads.")
-            else:
-                st.warning("Please select at least one prospect.")
 # "Leads" tab logic
 if tab_selection == "Leads":
     st.title("Leads")
@@ -522,67 +532,42 @@ if tab_selection == "Assignment":
     leads_df = load_leads_data()
     sales_df = load_salesperson_data()
 
-    # Prepare the data to display (business name, and recommendation for sales person)
     assignment_data = []
 
-    # Process if there are leads and salesperson data available
     if not leads_df.empty and not sales_df.empty:
-        # Loop over each lead
         for idx, lead in leads_df.iterrows():
             business_name = lead['Name']
-            expertise_needed = "Off-Grid Solutions"  # Expertise fixed for now (can be dynamic if needed)
+            expertise_needed = "Off-Grid Solutions"
 
-            # Generate prompt for OpenAI to get the most suitable salesperson
-            prompt = f"""
-            We have a business lead named '{business_name}' that requires expertise in {expertise_needed}. Please recommend the most suitable salesperson from the following list based on their expertise, experience, and location:
-            
-            LEAD:
-            Business Name: {business_name}
-            Expertise Needed: {expertise_needed}
-            
-            SALESPEOPLE:
-            """
+            # Get the recommended salesperson (your existing function)
+            recommended_salesperson = get_salesperson_recommendation(
+                business_name, expertise_needed, leads_df, sales_df
+            )
 
-            # Add salespeople data to the prompt
-            for _, row in sales_df.iterrows():
-                prompt += f"\nSales Person ID: {row['Sales Person ID']}, Name: {row['Name']}, Experience: {row['Experience (Years)']} years, Expertise: {row['Expertise in Off-Grid Energy']}, Location: {row['Location (City in Italy)']}"
-
-            prompt += "\n\nPlease recommend the best salesperson for this lead, providing the Salesperson ID, Name, Experience, Expertise, and Location."
-
-            # Send the prompt to OpenAI for recommendation
-            recommended_salesperson = get_salesperson_recommendation(business_name, expertise_needed, leads_df, sales_df)
-
-            # Assuming recommended_salesperson is a dictionary (as the OpenAI response should be in JSON format)
             if recommended_salesperson:
-                # If the response is in the correct format, it should already be a dictionary.
-                # No need to split, simply access the dictionary fields directly:
-                
-                # Example of accessing values in the dictionary
-                salesperson_id = recommended_salesperson.get("Sales Person ID", "N/A")
-                salesperson_name = recommended_salesperson.get("Name", "N/A")
-                experience = recommended_salesperson.get("Experience", "N/A")
-                expertise = recommended_salesperson.get("Expertise", "N/A")
-                location = recommended_salesperson.get("Location", "N/A")
-
-                # Append the assignment data to the list
                 assignment_data.append({
                     "Business Name": business_name,
-                    "Location": lead['Address'],  # Location of the business (Address)
-                    "Sales Person ID": salesperson_id,
-                    "Sales Person Name": salesperson_name,
-                    "Sales Person Location": location,
-                    "Expertise": expertise,
-                    "Experience": experience
+                    "Location": lead['Address'],
+                    "Sales Person ID": recommended_salesperson.get("Sales Person ID", "N/A"),
+                    "Sales Person Name": recommended_salesperson.get("Name", "N/A"),
+                    "Sales Person Location": recommended_salesperson.get("Location", "N/A"),
+                    "Expertise": recommended_salesperson.get("Expertise", "N/A"),
+                    "Experience": recommended_salesperson.get("Experience", "N/A")
                 })
             else:
-                st.warning(f"No salesperson recommendation received for business '{business_name}'.")
-                
-        # Display the assignment table with the recommended salesperson
+                st.warning(f"No salesperson recommendation for {business_name}")
+
         if assignment_data:
             assignment_df = pd.DataFrame(assignment_data)
+
+            # SAVE assignments so the Sales Email tab can read them
+            assignment_df.to_csv("assignments.csv", index=False)
+
+            st.success("Assignments updated successfully.")
             st.dataframe(assignment_df)
         else:
-            st.warning("No assignments available.")
+            st.warning("No assignments were generated.")
+
 
 if tab_selection == "Lead Information":
     st.title("Lead Information")
@@ -673,40 +658,67 @@ import pyperclip  # Optional: for local copy functionality if desired
 if tab_selection == "Sales Email":
     st.title("Sales Email Generator")
 
-    # Load data
+    # Load leads
     leads_df = load_leads_data()
     sales_df = load_salesperson_data()
 
     if leads_df.empty:
         st.warning("No leads available. Please generate leads first.")
     else:
-        # Dropdown for selecting lead
+        # Lead selection dropdown
         selected_lead = st.selectbox(
             "Select a Lead",
-            leads_df["Name"].tolist(),
-            index=0
+            leads_df["Name"].tolist()
         )
 
-        # Fetch the chosen lead’s basic details
+        # Basic lead info
         lead_info = leads_df[leads_df["Name"] == selected_lead].iloc[0]
         business_address = lead_info.get("Address", "Not Available")
 
-        # Fetch assigned salesperson from Assignment tab logic
-        # You can load it from CSV if persisted; here we pick one randomly for demo
-        assigned_salesperson = sales_df.sample(1).iloc[0]
-        salesperson_name = assigned_salesperson["Name"]
-        salesperson_experience = assigned_salesperson["Experience (Years)"]
-        salesperson_expertise = assigned_salesperson["Expertise in Off-Grid Energy"]
-        salesperson_location = assigned_salesperson["Location (City in Italy)"]
+        # --------------------------------------------------------------------
+        # Load assigned salesperson (from Assignment tab)
+        # --------------------------------------------------------------------
+        salesperson_name = ""
+        salesperson_experience = ""
+        salesperson_expertise = ""
+        salesperson_location = ""
 
-        # Get contextual business info for personalization
+        if os.path.exists("assignments.csv"):
+            assignments_df = pd.read_csv("assignments.csv")
+            lead_assignment = assignments_df[assignments_df["Business Name"] == selected_lead]
+
+            if not lead_assignment.empty:
+                salesperson_name = lead_assignment.iloc[0]["Sales Person Name"]
+                salesperson_experience = lead_assignment.iloc[0]["Experience"]
+                salesperson_expertise = lead_assignment.iloc[0]["Expertise"]
+                salesperson_location = lead_assignment.iloc[0]["Sales Person Location"]
+            else:
+                # Fallback if no assignment exists yet
+                st.warning("No assigned salesperson found. Selecting a random one.")
+                sp = sales_df.sample(1).iloc[0]
+                salesperson_name = sp["Name"]
+                salesperson_experience = sp["Experience (Years)"]
+                salesperson_expertise = sp["Expertise in Off-Grid Energy"]
+                salesperson_location = sp["Location (City in Italy)"]
+        else:
+            # No assignments file exists, use random fallback
+            st.warning("Assignments file not found. Selecting random salesperson.")
+            sp = sales_df.sample(1).iloc[0]
+            salesperson_name = sp["Name"]
+            salesperson_experience = sp["Experience (Years)"]
+            salesperson_expertise = sp["Expertise in Off-Grid Energy"]
+            salesperson_location = sp["Location (City in Italy)"]
+
+        # --------------------------------------------------------------------
+        # Fetch AI-generated business summary (context)
+        # --------------------------------------------------------------------
         def get_business_summary(business_name, business_address):
             prompt = f"""
             Provide a short summary (2–3 sentences) about the business '{business_name}', located at '{business_address}'.
             Focus on:
             - What the business is known for
-            - Any reputation, achievements, or recent positive news
-            Return only natural descriptive sentences suitable for including in a sales email.
+            - Any achievements or reputation
+            Return only natural descriptive sentences suitable for a sales email.
             """
 
             headers = {
@@ -727,29 +739,28 @@ if tab_selection == "Sales Email":
                     timeout=30,
                 )
                 if response.status_code == 200:
-                    data = response.json()
-                    return data["choices"][0]["message"]["content"].strip()
-                else:
-                    st.error(f"OpenAI API Error: {response.status_code}")
-                    return ""
-            except Exception as e:
-                st.error(f"Error fetching business context: {e}")
+                    return response.json()["choices"][0]["message"]["content"].strip()
+                return ""
+            except:
                 return ""
 
-        # Get AI-generated business context
-        with st.spinner(f"Gathering background on {selected_lead}..."):
+        with st.spinner(f"Gathering background for {selected_lead}..."):
             business_context = get_business_summary(selected_lead, business_address)
 
-        # Generate a personalized sales email
-        def generate_sales_email(business_name, business_context, salesperson_name, experience, expertise, location):
+        # --------------------------------------------------------------------
+        # Generate the personalized email
+        # --------------------------------------------------------------------
+        def generate_sales_email():
             prompt = f"""
-            Write a professional, friendly outreach email from SHV Energy addressed to the owners or managers of '{business_name}'.
-            - The sender is {salesperson_name} from SHV Energy, based in {location}.
-            - Mention their {experience} years of experience in {expertise}.
-            - Incorporate this business background naturally: {business_context}
-            - Invite the business for a meeting to discuss SHV Energy’s Off-Grid Solutions and how they could help.
-            - Format with multiple well-written paragraphs, professional tone, and clear paragraph spacing.
-            - Close with a polite sign-off and the salesperson’s signature.
+            Write a professional outreach email from SHV Energy addressed to the owners of '{selected_lead}'.
+            
+            Include:
+            - Sender: {salesperson_name} from SHV Energy based in {salesperson_location}.
+            - Mention: {salesperson_experience} years of experience in {salesperson_expertise}.
+            - Insert business context naturally: {business_context}
+            - Offer a meeting to discuss Off-Grid Energy Solutions.
+            - Use multiple clear paragraphs and a professional tone.
+            - End with proper signature.
             """
 
             headers = {
@@ -769,37 +780,27 @@ if tab_selection == "Sales Email":
                     json=body,
                     timeout=40,
                 )
-
                 if response.status_code == 200:
-                    data = response.json()
-                    email_text = data["choices"][0]["message"]["content"].strip()
-                    return email_text
-                else:
-                    st.error(f"OpenAI API Error: {response.status_code}")
-                    return None
-            except Exception as e:
-                st.error(f"Error generating email: {e}")
-                return None
+                    return response.json()["choices"][0]["message"]["content"].strip()
+            except:
+                pass
 
-        # Fetch generated email
-        with st.spinner(f"Generating personalized email for {selected_lead}..."):
-            email_output = generate_sales_email(
-                selected_lead, business_context,
-                salesperson_name, salesperson_experience,
-                salesperson_expertise, salesperson_location
-            )
+            return None
 
-        # Display the generated email
+        # Generate email
+        with st.spinner("Generating email..."):
+            email_output = generate_sales_email()
+
         if email_output:
-            st.markdown("### ✉️ Generated Sales Email")
+            st.markdown("### ✉️ Generated Email")
             st.markdown(email_output)
 
-            # Copy-to-clipboard button
-            if st.button("📋 Copy Email to Clipboard"):
+            if st.button("Copy to Clipboard"):
                 pyperclip.copy(email_output)
-                st.success("Email copied to clipboard!")
+                st.success("Email copied!")
         else:
-            st.warning("No email could be generated.")
+            st.warning("Failed to generate email.")
+
 
 
 
