@@ -315,7 +315,10 @@ st.markdown('<div class="stSubtitle"><h2>Powered by TCS GEN AI and Azure Open AI
 
 # Sidebar for tab selection
 st.sidebar.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
-tab_selection = st.sidebar.radio("Select a Tab", ["Prospects", "Leads", "Assignment", "Lead Information", "Sales Email"])
+tab_selection = st.sidebar.radio("Select a Tab", [
+    "Prospects", "Leads", "Assignment", "Lead Information", "Sales Email", 
+    "Carbon Intensity Data", "Additional Insights", "Targeted Marketing Strategy"
+])
 
 # Process prospects and add checkboxes
 # Process prospects and add checkboxes
@@ -812,6 +815,396 @@ if tab_selection == "Sales Email":
             st.warning("Failed to generate email.")
 
 
+if tab_selection == "Carbon Intensity Data":
+    st.title("Carbon Intensity Based on AI-Extracted Location")
+
+    # 1️⃣ Load leads from the leads.csv file
+    try:
+        leads_df = pd.read_csv("leads.csv")  # Changed to leads.csv
+    except:
+        st.error("Leads file not found. Ensure leads.csv is available.")
+        st.stop()
+
+    # Strip spaces from column names just in case
+    leads_df.columns = leads_df.columns.str.strip()
+
+    # 2️⃣ User selects a business lead
+    selected_business = st.selectbox(
+        "Select Business Lead",
+        leads_df["Name"].tolist(),  # Changed to "Name" based on your CSV
+        index=0  # Default to the first lead
+    )
+
+    # Fetch the lead row from the dataframe
+    lead_row = leads_df[leads_df["Name"] == selected_business].iloc[0]  # Changed to "Name"
+    full_lead_record = lead_row.to_dict()
+
+    # 3️⃣ Load ENV vars for Azure OpenAI (the same you use in Assignment tab)
+    AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+    AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+
+    # ------------------------
+    # AI Prompt Construction
+    # ------------------------
+    prompt = f"""
+    You are an expert in Italian geography and Electricity Maps API zones.
+
+    Here is a complete business lead record:
+    {full_lead_record}
+
+    TASKS:
+    1. Extract the EXACT Italian city or regional location from the address.
+    2. Convert that location into the correct Electricity Maps zone code.
+    3. Return data ONLY in this exact JSON format:
+
+    {{
+        "location": "[Extracted Italian location]",
+        "zone": "[Electricity Maps zone code]"
+    }}
+
+    Examples:
+    Central North Italy -> IT-CNO
+    Central South Italy -> IT-CSO
+    North Italy -> IT-NO
+    Sardinia -> IT-SAR
+    Sicily -> IT-SIC
+    South Italy -> IT-SO
+
+    DO NOT RETURN ANYTHING OTHER THAN THE JSON ABOVE.
+    """
+
+    # ------------------------
+    # Prepare request to Azure OpenAI
+    # ------------------------
+    headers = {
+        "Authorization": f"Bearer {AZURE_OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    body = {
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 300,
+        "temperature": 0.2,
+    }
+
+    try:
+        ai_response = requests.post(
+            f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version={AZURE_OPENAI_API_VERSION}",
+            headers=headers,
+            json=body,
+            timeout=30,
+        )
+
+        if ai_response.status_code != 200:
+            st.error(f"Azure OpenAI Error {ai_response.status_code}: {ai_response.text}")
+            st.stop()
+
+        ai_content = ai_response.json()["choices"][0]["message"]["content"].strip()
+
+        try:
+            location_obj = json.loads(ai_content)
+        except json.JSONDecodeError:
+            st.error("AI response is not valid JSON:")
+            st.write(ai_content)
+            st.stop()
+
+        location = location_obj.get("location")
+        zone = location_obj.get("zone")
+
+        st.success(f"📍 AI Extracted Location: {location}")
+        st.success(f"🔌 Electricity Maps Zone: {zone}")
+
+    except Exception as e:
+        st.error(f"Error calling Azure OpenAI: {e}")
+        st.stop()
+
+    # ------------------------
+    # Zone Mapping Based on Region Name
+    # ------------------------
+    zone_mapping = {
+        "Central North Italy": "IT-CNO",
+        "Central South Italy": "IT-CSO",
+        "North Italy": "IT-NO",
+        "Sardinia": "IT-SAR",
+        "Sicily": "IT-SIC",
+        "South Italy": "IT-SO",
+    }
+
+    # If zone is not provided by AI, try mapping the region
+    if not zone:
+        zone = zone_mapping.get(location, None)
+
+    # If no valid zone is found, display an error
+    if not zone:
+        st.error(f"Could not map region '{location}' to a valid Electricity Maps zone.")
+        st.stop()
+
+    st.success(f"Resolved Zone: {zone}")
+
+    # ------------------------
+    # Make the API Call
+    # ------------------------
+    carbon_url = "https://api.electricitymaps.com/v3/carbon-intensity/latest"
+    headers = {"auth-token": os.getenv("ELECTRICITYMAPS_API_KEY")}  # Ensure correct header for the API
+    params = {"zone": zone}
+
+    resp = requests.get(carbon_url, headers=headers, params=params)
+
+    if resp.status_code == 200:
+        carbon = resp.json()
+
+        st.subheader(f"🌍 Carbon Intensity for {location} ({zone})")
+        st.write(f"**Current Carbon Intensity:** {carbon['carbonIntensity']} gCO₂/kWh")
+
+        # ------------------------
+        # Convert API response to a table format
+        # ------------------------
+        carbon_data = {
+            "Field": [
+                "Zone",
+                "Carbon Intensity (gCO₂/kWh)",
+                "Datetime",
+                "Updated At",
+                "Created At",
+                "Emission Factor Type",
+                "Is Estimated",
+                "Estimation Method",
+                "Temporal Granularity",
+                "_Disclaimer"
+            ],
+            "Value": [
+                carbon.get("zone", "N/A"),
+                carbon.get("carbonIntensity", "N/A"),
+                carbon.get("datetime", "N/A"),
+                carbon.get("updatedAt", "N/A"),
+                carbon.get("createdAt", "N/A"),
+                carbon.get("emissionFactorType", "N/A"),
+                carbon.get("isEstimated", "N/A"),
+                carbon.get("estimationMethod", "N/A"),
+                carbon.get("temporalGranularity", "N/A"),
+                carbon.get("_disclaimer", "N/A")
+            ]
+        }
+
+        st.table(pd.DataFrame(carbon_data))
+
+    else:
+        st.error(f"Electricity Maps API Error {resp.status_code}: {resp.text}")
+
+
+if tab_selection == "Additional Insights":
+
+    st.title("Additional Insights for Enhanced Lead Profile")
+
+    st.markdown("### 🇮🇹 Italy – Open Data Maturity (ODM) 2024 Overview")
+
+    # -------------- TABLE 1: MATURITY SCORES --------------------
+    st.subheader("📊 Open Data Maturity Scores (2024)")
+
+    maturity_data = {
+        "Dimension": ["Policy", "Portal", "Quality", "Impact"],
+        "Score": [93.8, 89.6, 85.7, 100],
+        "Year-on-Year Change": ["+2.0%", "+3.4%", "+1.3%", "+5.8%"],
+    }
+
+    maturity_df = pd.DataFrame(maturity_data)
+    st.table(maturity_df)
+
+    # ---------------- KEY QUESTIONS -----------------------
+    st.markdown("### ❓ Key Questions for Each Dimension")
+
+    insights = {
+        "Policy Dimension": [
+            "Does the national open data policy/strategy include an action plan? – **Yes**",
+            "To what degree do local/regional bodies run open data initiatives? – **All**",
+            "Are there processes to ensure policies are implemented? – **Yes**",
+        ],
+        "Portal Dimension": [
+            "Do you monitor the portal’s traffic? – **Yes**",
+            "Do public sector providers contribute data? – **About half**",
+            "Does the portal list existing but non-open datasets? – **Yes**",
+        ],
+        "Quality Dimension": [
+            "Do you monitor metadata quality? – **Yes**",
+            "Do providers have to follow metadata standards? – **Yes**",
+            "Is there a model to assess data quality? – **Yes**",
+        ],
+        "Impact Dimension": [
+            "Is there a definition of open data reuse? – **Yes**",
+            "Are there processes to monitor reuse? – **Yes**",
+            "Do you measure the impact of open data? – **Yes**",
+        ],
+    }
+
+    for section, q_list in insights.items():
+        st.subheader(section)
+        for q in q_list:
+            st.write(f"- {q}")
+
+    # ---------------- PDF PREVIEW -----------------------
+    st.markdown("### 📄 Reference: ODM 2024 Italy Factsheet")
+    st.write("Below is a preview of the uploaded PDF used for insights:")
+
+    try:
+        with open("2024_odm_factsheet_italy.pdf", "rb") as pdf_file:
+            st.download_button(
+                label="📥 Download Italy ODM 2024 Factsheet PDF",
+                data=pdf_file,
+                file_name="2024_odm_factsheet_italy.pdf",
+                mime="application/pdf"
+            )
+        st.info("PDF Loaded Successfully. Showing preview image…")
+    except Exception as e:
+        st.error(f"Could not load the PDF: {e}")
+if tab_selection == "Targeted Marketing Strategy":
+
+    st.title("🎯 Targeted Marketing Strategy")
+
+    # ------------------------------------------------------------------
+    # Load the assignments (lead + salesperson combined profile)
+    # ------------------------------------------------------------------
+    try:
+        assignment_df = pd.read_csv("assignments.csv")
+    except:
+        st.error("Assignments not found. Please run Assignment tab first.")
+        st.stop()
+
+    # Select lead to generate strategy for
+    selected_business = st.selectbox(
+        "Select Business Lead",
+        assignment_df["Business Name"].tolist()
+    )
+
+    # Extract full combined profile for this lead
+    lead_data = assignment_df[assignment_df["Business Name"] == selected_business].iloc[0].to_dict()
+
+    # Try displaying nicely
+    with st.expander("View Lead Profile Used for Strategy"):
+        st.json(lead_data)
+
+    # ------------------------------------------------------------------
+    # OPTIONAL: Pull the Carbon Intensity if stored in your assignment df
+    # ------------------------------------------------------------------
+    carbon_intensity = lead_data.get("CarbonIntensity", None)
+
+    # Load ODM PDF (context)
+    odm_pdf_path = "2024_odm_factsheet_italy.pdf"
+    odm_context = """
+    Italy's Open Data Maturity (ODM) 2024 indicates a highly advanced national digital ecosystem.
+
+    Key quick facts used for marketing context:
+    - Policy: 93.8  
+    - Portal: 89.6  
+    - Quality: 85.7  
+    - Impact: 100  
+    - Strong adoption of open data for local & regional development  
+    - Strong public initiatives supporting sustainability and green innovation
+    """
+
+    # ------------------------------------------------------------------
+    # Azure OpenAI ENV
+    # ------------------------------------------------------------------
+    AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+    AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+
+    # ------------------------------------------------------------------
+    # Build the prompt to send ALL RELEVANT INFO to OpenAI
+    # ------------------------------------------------------------------
+
+    prompt = f"""
+    You are an expert in marketing strategy, off-grid gas solutions, Italian SME behavior, 
+    and regional energy economics.
+
+    Create a **deeply personalized marketing strategy** for the exact restaurant lead below.
+
+    ===============================
+    LEAD PROFILE (FULL DATA INPUT)
+    ===============================
+    {json.dumps(lead_data, indent=2)}
+
+    ===============================
+    CARBON INTENSITY (IF AVAILABLE)
+    ===============================
+    {carbon_intensity}
+
+    ===============================
+    ITALY OPEN DATA MATURITY (ODM 2024)
+    USED TO UNDERSTAND ECONOMIC CONTEXT
+    ===============================
+    {odm_context}
+
+    ===============================
+    YOUR TASK
+    ===============================
+
+    Create a **highly tailored marketing strategy** ONLY for this specific lead.  
+    Base all reasoning strictly on the provided data.  
+    Do NOT generalize.  
+    Write the output in beautifully formatted MARKDOWN.
+
+    Include the following sections:
+
+    1. **Lead Summary**
+    2. **Operational Pain Points (Based on location, type, popularity, profit)**
+    3. **Energy Risk Profile (Using carbon intensity if provided)**
+    4. **Tailored Off-Grid Gas Solution Recommendation**
+    5. **Financial ROI Estimation (based strictly on lead data)**
+    6. **Environmental Impact & Emission Benefits**
+    7. **Recommended Messaging Style (tone, angle)**
+    8. **Targeted Outreach Plan (step-by-step)**
+    9. **Campaign Ideas (local incentives, context from ODM Italy)**
+
+    Make everything look clean with bold headers, bullet points, and spacing.
+    """
+
+    # ------------------------------------------------------------------
+    # CALL AZURE OPENAI
+    # ------------------------------------------------------------------
+
+    headers = {
+        "Authorization": f"Bearer {AZURE_OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    body = {
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 1500,
+        "temperature": 0.3,
+    }
+
+    # Using a spinner to indicate the request is in progress
+    with st.spinner("Generating marketing strategy..."):
+        try:
+            response = requests.post(
+                f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version={AZURE_OPENAI_API_VERSION}",
+                headers=headers,
+                json=body,
+                timeout=45,
+            )
+
+            if response.status_code != 200:
+                st.error(f"OpenAI Error {response.status_code}: {response.text}")
+                st.stop()
+
+            final_strategy = response.json()["choices"][0]["message"]["content"]
+
+        except Exception as e:
+            st.error(f"OpenAI request failed: {e}")
+            st.stop()
+
+    # ------------------------------------------------------------------
+    # DISPLAY THE FINAL MARKETING STRATEGY
+    # ------------------------------------------------------------------
+
+    st.subheader(f"📌 Personalized Marketing Strategy for {selected_business}")
+    st.markdown(final_strategy)
+
+    st.markdown("---")
+    st.info("This strategy is automatically generated using Azure OpenAI using all relevant lead data, carbon intensity, and Italian economic insights.")
 
 
 
